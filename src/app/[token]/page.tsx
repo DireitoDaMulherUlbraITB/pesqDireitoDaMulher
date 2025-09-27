@@ -32,10 +32,10 @@ interface QuestionOption {
 
 interface QuestionData {
     questionId: string;
-    questionNumber: string;
-    questionText: string;
-    questionSection: number;
-    type: string;
+    questionNumber: string | null;
+    questionText: string | null;
+    questionSection: string | null;
+    type: string | null;
     totalAnswers: number;
     options: QuestionOption[];
 }

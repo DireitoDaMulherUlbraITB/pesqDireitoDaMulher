@@ -18,6 +18,15 @@ type GenderCount = { gender: string | null; count: number };
 type CourseCount = { course: string | null; count: number };
 type PeriodCount = { period: number | null; count: number };
 type SectionCount = { section: string | null; count: number };
+type QuestionData = {
+    questionId: string;
+    questionNumber: string | null;
+    questionText: string | null;
+    questionSection: string | null;
+    type: string | null;
+    totalAnswers: number;
+    options: Array<{ text: string; count: number }>;
+};
 
 export async function getSubprojectMetrics(token: string) {
     try {
@@ -169,7 +178,7 @@ export async function getSubprojectMetrics(token: string) {
                     questionId,
                     questionNumber: row.questionNumber,
                     questionText: row.questionText,
-                    questionSection: row.questionSection,
+                    questionSection: row.questionSection as string | null,
                     type: row.type,
                     totalAnswers: 0,
                     options: [],
@@ -177,7 +186,7 @@ export async function getSubprojectMetrics(token: string) {
             }
 
             if (row.answerText) {
-                const existingOption = acc[questionId].options.find(opt => opt.text === row.answerText);
+                const existingOption = acc[questionId].options.find((opt: { text: string }) => opt.text === row.answerText);
                 if (existingOption) {
                     existingOption.count += row.answerCount || 0;
                 } else {
@@ -190,7 +199,7 @@ export async function getSubprojectMetrics(token: string) {
             }
 
             return acc;
-        }, {} as Record<string, any>);
+        }, {} as Record<string, QuestionData>);
 
         // Busca estudantes com sessões ativas
         const activeSessions = await db
@@ -245,8 +254,8 @@ export async function getSubprojectMetrics(token: string) {
                 })),
                 questionsData: Object.values(questionsData).sort((a, b) => {
                     // Converte questionNumber para número para ordenação correta
-                    const numA = parseInt(a.questionNumber) || 0;
-                    const numB = parseInt(b.questionNumber) || 0;
+                    const numA = parseInt(a.questionNumber as string) || 0;
+                    const numB = parseInt(b.questionNumber as string) || 0;
                     return numA - numB;
                 }),
             },
