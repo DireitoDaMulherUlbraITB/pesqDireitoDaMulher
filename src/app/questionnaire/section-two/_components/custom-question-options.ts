@@ -35,11 +35,13 @@ export const questionOptions: Record<string, string[]> = {
         "Apoio institucional (bolsa, auxílio, etc.)",
         "Sem apoio significativo",
         "Outro",
+        "Não se aplica",
     ],
     // 7 Você já pensou em trancar ou desistir do curso devido à maternidade/paternidade?
     "f8ab1c24-90b0-4f59-8e51-a40df31d4351": [
         "Sim",
         "Não",
+        "Não se aplica",
     ],
     // 8 Quais os principais impactos da maternidade/paternidade em sua vida acadêmica?
     "5578fd81-11bb-4d6f-aafa-94da68f095c1": [
@@ -61,6 +63,7 @@ export const questionOptions: Record<string, string[]> = {
         "Professores(as)",
         "Instituição",
         "Outro",
+        "Não se aplica",
     ],
     // 11 Quem mais contribui para que você consiga continuar os estudos?
     "e4b2dc61-6489-4836-89d4-4f416b299169": [
@@ -70,18 +73,19 @@ export const questionOptions: Record<string, string[]> = {
         "Professores(as)",
         "Instituição",
         "Ninguém",
+        "Não se aplica",
     ],
     // 12 Você conhece políticas institucionais voltadas a mães universitárias (auxílio, bolsas, flexibilização)?
     "bdeffa02-ceab-4d64-bcac-aff97c3dc659": [
         "Sim",
         "Não",
+        "Não se aplica",
     ],
     // 13 Você pretende ter filhos durante a faculdade?
     "3a845455-dc56-46db-af0c-9da068fc1157": [
         "Sim",
         "Não",
         "Não sei",
-        "Não se aplica"
     ],
 };
 

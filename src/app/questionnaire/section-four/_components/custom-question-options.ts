@@ -17,6 +17,7 @@ export const questionOptions: Record<string, string[]> = {
         "Eventos acadêmicos / festas",
         "Espaços virtuais ligados à universidade",
         "Outros",
+        "Não se aplica",
     ],
     //3 Quem esteve envolvido nesses episódios?
     "93f73b15-6aaf-4906-9112-de992799cd74": [
@@ -25,6 +26,7 @@ export const questionOptions: Record<string, string[]> = {
         "Funcionários(as) da instituição",
         "Pessoas de fora da universidade",
         "Outros",
+        "Não se aplica",
     ],
     //4 Quais formas de assédio (moral e/ou sexual) você identificou ou vivenciou?
     "6b67d5c5-9fad-4a20-b3bb-2e2bb83eb440": [
@@ -43,6 +45,7 @@ export const questionOptions: Record<string, string[]> = {
         "Indiferença institucional diante de denúncias de violência ou assédio no ambiente universitário",
         "Tolerância com práticas discriminatórias em sala ou nos corredores da universidade",
         "Outros",
+        "Não se aplica",
     ],
     //5 Esses episódios tiveram algum impacto em sua vida acadêmica?
     "c4d7f025-d234-495b-8d04-a0bfe12f1a17": [
@@ -51,6 +54,7 @@ export const questionOptions: Record<string, string[]> = {
         "Afetaram meu rendimento (notas, trabalhos, frequência)",
         "Pensei em trancar ou desistir do curso",
         "Impactaram minha saúde mental (ansiedade, depressão, insegurança)",
+        "Não se aplica",
     ],
     //6 Você conhece colegas que passaram por situações semelhantes?
     "79a07999-8f9d-4ebd-a846-f8fd02739736": [
@@ -68,6 +72,7 @@ export const questionOptions: Record<string, string[]> = {
         "Sim, à polícia",
         "Sim, à familiares/amigos",
         "Não denunciei",
+        "Não se aplica",
     ],
     //9 Se não denunciou, qual o principal motivo?
     "631d1041-4efe-47de-86d3-793eab1ab70b": [
@@ -75,7 +80,8 @@ export const questionOptions: Record<string, string[]> = {
         "Vergonha / constrangimento",
         "Falta de confiança nos canais institucionais",
         "Não considerei importante",
-        "Outros"
+        "Outros",
+        "Não se aplica",
     ],
 };
 

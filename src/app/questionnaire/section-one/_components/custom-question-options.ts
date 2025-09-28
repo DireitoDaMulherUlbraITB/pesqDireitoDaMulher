@@ -29,6 +29,7 @@ export const questionOptions: Record<string, string[]> = {
         "Incomodado(a), mas não manifestei",
         "Constrangido(a) / silenciado(a)",
         "Reagi / denunciei",
+        "Não se aplica",
     ],
     // 5
     "f41b68bc-0c13-45da-b00a-2f2b64b27420": [
@@ -36,6 +37,7 @@ export const questionOptions: Record<string, string[]> = {
         "Sim, reduziram minha participação em sala",
         "Sim, afetaram minha motivação ou desempenho",
         "Sim, pensei em desistir/trancar disciplinas ",
+        "Não se aplica",
     ],
     // 6
     "787b2b65-6412-4d7a-a11a-5546bdb4eca1": [

@@ -28,7 +28,8 @@ export const questionOptions: Record<string, string[]> = {
         "Colegas de curso",
         "Pessoas de fora da universidade",
         "Professores(as)",
-        "Outros"
+        "Outros",
+        "Não se aplica",
     ],
     //5 Esses episódios tiveram algum impacto sobre você?
     "ca014eb2-8114-43ed-80d0-99fe9792297e": [
@@ -36,6 +37,7 @@ export const questionOptions: Record<string, string[]> = {
         "Afetou desempenho acadêmico (notas, trabalhos, participação)",
         "Reduziu participação em grupos virtuais da faculdade",
         "Não percebi impacto relevante",
+        "Não se aplica"
     ],
     //6 Você sabia que existem leis específicas que protegem contra crimes digitais (Lei nº 13.718/2018; Lei nº 14.132/2021)?
     "156bc64f-5409-4e32-a3fd-627a527326f3": [
@@ -53,6 +55,7 @@ export const questionOptions: Record<string, string[]> = {
         "Sim, à polícia",
         "Sim, à familiares/amigos",
         "Não denunciei",
+        "Não se aplica",
     ],
 };
 
