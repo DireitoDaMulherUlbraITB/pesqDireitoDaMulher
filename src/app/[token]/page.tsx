@@ -151,7 +151,7 @@ export default function SubprojectResultsPage() {
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
                 <div className="mb-8">
-                    <div className="flex items-center gap-4 mb-4">
+                    <div className="flex flex-col md:flex-row items-center gap-4 mb-4">
                         <Image src="/LogoUlbra.png" alt="ULBRA" width={150} height={50} />
                         <div>
                             <h1 className="text-3xl font-bold text-gray-900">{metrics.groupName}</h1>
@@ -400,21 +400,21 @@ export default function SubprojectResultsPage() {
                                 <Card key={question.questionId} className="border-l-4 border-l-blue-500">
                                     <CardHeader className="pb-3">
                                         <div className="flex items-start justify-between">
-                                            <div className="flex-1">
-                                                <CardTitle className="text-lg">
+                                            <div className="flex-1 min-w-0">
+                                                <CardTitle className="text-lg break-words">
                                                     Pergunta {question.questionNumber}
                                                 </CardTitle>
-                                                <CardDescription className="mt-2">
+                                                <CardDescription className="mt-2 break-words text-sm sm:text-base">
                                                     {question.questionText}
                                                 </CardDescription>
-                                                <div className="flex items-center gap-4 mt-3">
-                                                    <Badge variant="outline">
+                                                <div className="flex flex-wrap items-center gap-2 mt-3">
+                                                    <Badge variant="outline" className="text-xs">
                                                         {question.type === 'to-write' ? 'Pergunta Aberta' : 'Objetiva'}
                                                     </Badge>
-                                                    <Badge variant="secondary">
+                                                    <Badge variant="secondary" className="text-xs">
                                                         Seção {question.questionSection}
                                                     </Badge>
-                                                    <Badge variant="default">
+                                                    <Badge variant="default" className="text-xs">
                                                         {question.totalAnswers} respostas
                                                     </Badge>
                                                 </div>
@@ -442,14 +442,14 @@ export default function SubprojectResultsPage() {
                                                     <div className="space-y-2 max-h-60 overflow-y-auto">
                                                         {question.options.map((option, index) => (
                                                             <div key={index} className="p-3 bg-gray-50 rounded-lg">
-                                                                <p className="text-sm text-gray-700">
+                                                                <p className="text-sm text-gray-700 break-words">
                                                                     {option.text}
                                                                 </p>
-                                                                <div className="flex items-center justify-between mt-1">
+                                                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 mt-2">
                                                                     <span className="text-xs text-gray-500">
                                                                         Resposta {index + 1}
                                                                     </span>
-                                                                    <Badge variant="outline" className="text-xs">
+                                                                    <Badge variant="outline" className="text-xs w-fit">
                                                                         {option.count} vez{option.count !== 1 ? 'es' : ''}
                                                                     </Badge>
                                                                 </div>
@@ -468,15 +468,15 @@ export default function SubprojectResultsPage() {
 
                                                     return (
                                                         <div key={index} className="space-y-2">
-                                                            <div className="flex items-center justify-between">
-                                                                <span className="text-sm font-medium">
+                                                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                                                <span className="text-sm font-medium break-words">
                                                                     {option.text}
                                                                 </span>
-                                                                <div className="flex items-center gap-2">
-                                                                    <Badge variant="outline">
+                                                                <div className="flex items-center gap-2 flex-shrink-0">
+                                                                    <Badge variant="outline" className="text-xs">
                                                                         {option.count}
                                                                     </Badge>
-                                                                    <span className="text-sm text-gray-500">
+                                                                    <span className="text-sm text-gray-500 whitespace-nowrap">
                                                                         {percentage.toFixed(1)}%
                                                                     </span>
                                                                 </div>
