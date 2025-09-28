@@ -29,7 +29,6 @@ export const questionOptions: Record<string, string[]> = {
     ],
     // 6 Após o nascimento do(s) filho(s) (ou se for o caso de adoção), como você conciliou maternidade (ou paternidade) e estudos?
     "e0a0899f-b767-401d-acc2-7c8e69f42b4c": [
-        "Você pretende ter filhos durante a faculdade?",
         "Apoio da família",
         "Apoio de colegas/professores",
         "Apoio institucional (bolsa, auxílio, etc.)",
