@@ -119,32 +119,16 @@ export async function getSubprojectMetrics(token: string) {
                 .orderBy(questionsTable.questionSection) as Promise<SectionCount[]>,
         ]);
 
-        // Busca estudantes que responderam todas as perguntas deste grupo
-        const studentsWithAllAnswers = await db
-            .select({
-                studentId: answersTable.studentId,
-                answerCount: count(answersTable.id),
-            })
-            .from(answersTable)
-            .innerJoin(questionsTable, eq(answersTable.questionId, questionsTable.id))
-            .where(eq(questionsTable.groupId, group.id))
-            .groupBy(answersTable.studentId)
-            .having(sql`count(${answersTable.id}) = ${totalQuestions[0]?.count || 0}`);
+        // Total de estudantes cadastrados
+        const totalStudentsRow = await db.select({ count: count() }).from(studentsTable);
+        const totalStudents = totalStudentsRow[0]?.count || 0;
 
-        // Total de estudantes que responderam todas as perguntas
-        const completedStudents = studentsWithAllAnswers.length;
-
-        // Total de estudantes únicos que responderam pelo menos uma pergunta deste grupo
-        const studentsWithAnswers = await db
-            .select({
-                studentId: answersTable.studentId,
-            })
-            .from(answersTable)
-            .innerJoin(questionsTable, eq(answersTable.questionId, questionsTable.id))
-            .where(eq(questionsTable.groupId, group.id))
-            .groupBy(answersTable.studentId);
-
-        const totalStudents = studentsWithAnswers.length;
+        // Estudantes com status 'answered'
+        const completedRows = await db
+            .select({ count: count() })
+            .from(studentsTable)
+            .where(eq(studentsTable.responseStatus, 'answered'));
+        const completedStudents = completedRows[0]?.count || 0;
 
         // Busca dados das perguntas com suas opções de resposta
         const questionsWithAnswers = await db

@@ -34,6 +34,33 @@ export async function searchTokenBySubproject(subprojectName: string) {
     }
 }
 
+// Lista nomes distintos de subprojetos para popular o select
+export async function listSubprojects() {
+    try {
+        const rows = await db
+            .select({ name: groupAccessTokensTable.subproject_name })
+            .from(groupAccessTokensTable)
+            .groupBy(groupAccessTokensTable.subproject_name);
+
+        const items = rows
+            .map((r) => r.name)
+            .filter((v): v is string => Boolean(v))
+            .sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+        return {
+            success: true,
+            items,
+        } as const;
+    } catch (error) {
+        console.error("Erro ao listar subprojetos:", error);
+        return {
+            success: false as const,
+            items: [] as string[],
+            message: "Erro interno do servidor. Tente novamente.",
+        };
+    }
+}
+
 export async function searchTokenByToken(token: string) {
     try {
         // Busca o token pelo valor do token
