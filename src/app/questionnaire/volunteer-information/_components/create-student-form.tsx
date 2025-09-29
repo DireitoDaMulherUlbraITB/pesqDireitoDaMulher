@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { sessionManager } from "@/lib/session";
+import { toTitleCase } from "@/lib/utils";
 
 const createStudentSchema = z.object({
     gender: z.string().min(1, "Gênero é obrigatório"),
@@ -216,6 +217,10 @@ export function CreateStudentForm() {
                                                 placeholder="Digite sua profissão..."
                                                 className="bg-white border-1 border-gray-200 text-gray-900 focus:border-accent focus:ring-accent"
                                                 {...field}
+                                                onBlur={(e) => {
+                                                    const formatted = toTitleCase(e.target.value);
+                                                    field.onChange(formatted);
+                                                }}
                                             />
                                         </FormControl>
                                         <FormMessage />
