@@ -1,6 +1,7 @@
 "use server";
 
 import { count, eq, sql } from "drizzle-orm";
+import { and } from "drizzle-orm";
 
 import { db } from "@/db";
 import {
@@ -25,7 +26,14 @@ type QuestionData = {
     questionSection: string | null;
     type: string | null;
     totalAnswers: number;
-    options: Array<{ text: string; count: number }>;
+    options: Array<{
+        text: string;
+        count: number;
+        topCourses?: Array<{ course: string; count: number }>;
+        topAges?: Array<{ age: string; count: number }>;
+        topProfessions?: Array<{ profession: string; count: number }>;
+        topGenders?: Array<{ gender: string; count: number }>;
+    }>;
 };
 
 export async function getSubprojectMetrics(token: string) {
@@ -155,10 +163,11 @@ export async function getSubprojectMetrics(token: string) {
             .orderBy(questionsTable.questionNumber, answersTable.answerText);
 
         // Agrupa respostas por pergunta
-        const questionsData = questionsWithAnswers.reduce((acc, row) => {
+        const questionsData: Record<string, QuestionData> = {};
+        for (const row of questionsWithAnswers) {
             const questionId = row.questionId;
-            if (!acc[questionId]) {
-                acc[questionId] = {
+            if (!questionsData[questionId]) {
+                questionsData[questionId] = {
                     questionId,
                     questionNumber: row.questionNumber,
                     questionText: row.questionText,
@@ -170,20 +179,84 @@ export async function getSubprojectMetrics(token: string) {
             }
 
             if (row.answerText) {
-                const existingOption = acc[questionId].options.find((opt: { text: string }) => opt.text === row.answerText);
+                let topCourses = undefined;
+                let topAges = undefined;
+                let topProfessions = undefined;
+                let topGenders = undefined;
+                if (row.type === 'to-mark' || row.type === 'to-mark-several') {
+                    topCourses = await db
+                        .select({ course: studentsTable.course, count: count() })
+                        .from(answersTable)
+                        .innerJoin(studentsTable, eq(answersTable.studentId, studentsTable.id))
+                        .where(
+                            and(
+                                eq(answersTable.questionId, questionId),
+                                eq(answersTable.answerText, row.answerText)
+                            )
+                        )
+                        .groupBy(studentsTable.course)
+                        .orderBy(sql`count DESC`)
+                        .limit(3);
+
+                    topAges = await db
+                        .select({ age: studentsTable.age, count: count() })
+                        .from(answersTable)
+                        .innerJoin(studentsTable, eq(answersTable.studentId, studentsTable.id))
+                        .where(
+                            and(
+                                eq(answersTable.questionId, questionId),
+                                eq(answersTable.answerText, row.answerText)
+                            )
+                        )
+                        .groupBy(studentsTable.age)
+                        .orderBy(sql`count DESC`)
+                        .limit(3);
+
+                    topProfessions = await db
+                        .select({ profession: studentsTable.profession, count: count() })
+                        .from(answersTable)
+                        .innerJoin(studentsTable, eq(answersTable.studentId, studentsTable.id))
+                        .where(
+                            and(
+                                eq(answersTable.questionId, questionId),
+                                eq(answersTable.answerText, row.answerText)
+                            )
+                        )
+                        .groupBy(studentsTable.profession)
+                        .orderBy(sql`count DESC`)
+                        .limit(3);
+
+                    topGenders = await db
+                        .select({ gender: studentsTable.gender, count: count() })
+                        .from(answersTable)
+                        .innerJoin(studentsTable, eq(answersTable.studentId, studentsTable.id))
+                        .where(
+                            and(
+                                eq(answersTable.questionId, questionId),
+                                eq(answersTable.answerText, row.answerText)
+                            )
+                        )
+                        .groupBy(studentsTable.gender)
+                        .orderBy(sql`count DESC`)
+                        .limit(3);
+                }
+
+                const existingOption = questionsData[questionId].options.find((opt: { text: string }) => opt.text === row.answerText);
                 if (existingOption) {
                     existingOption.count += row.answerCount || 0;
                 } else {
-                    acc[questionId].options.push({
+                    questionsData[questionId].options.push({
                         text: row.answerText,
                         count: row.answerCount || 0,
+                        topCourses,
+                        topAges,
+                        topProfessions,
+                        topGenders,
                     });
                 }
-                acc[questionId].totalAnswers += row.answerCount || 0;
+                questionsData[questionId].totalAnswers += row.answerCount || 0;
             }
-
-            return acc;
-        }, {} as Record<string, QuestionData>);
+        }
 
         // Busca estudantes com sessões ativas
         const activeSessions = await db

@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, Briefcase, Calendar, CheckCircle, ChevronDown, ChevronUp, FileText, GraduationCap, TrendingUp, User, Users } from "lucide-react";
+import { Briefcase, Calendar, CheckCircle, ChevronDown, ChevronUp, FileText, GraduationCap, Transgender, TrendingUp, Users } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
@@ -173,7 +173,7 @@ export default function GeneralResultsPage() {
           <Card className="overflow-hidden">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
+                <Transgender className="h-5 w-5" />
                 Distribuição por Gênero
               </CardTitle>
             </CardHeader>
@@ -230,7 +230,7 @@ export default function GeneralResultsPage() {
           <Card className="overflow-hidden">
             <CardHeader className="flex flex-row justify-between items-center">
               <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
+                <Calendar className="h-5 w-5" />
                 Distribuição por Idade
               </CardTitle>
               <button
