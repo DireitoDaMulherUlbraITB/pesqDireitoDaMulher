@@ -328,7 +328,7 @@ export default function SubprojectResultsPage() {
                                                                                 <span className="flex gap-2 font-semibold text-gray-800 mb-1"><GraduationCap className="h-5 w-5" /> Cursos</span>
                                                                                 <div className="flex flex-col gap-2">
                                                                                     {option.topCourses.map((c) => (
-                                                                                        <Badge key={c.course} variant="secondary" className="text-xs px-2 py-1">{c.course} <span className="font-bold">- {c.count}</span></Badge>
+                                                                                        <Badge key={c.course} variant="secondary" className="text-xs px-2 py-1">{c.course} <span className="font-bold"> - {c.count}</span></Badge>
                                                                                     ))}
                                                                                 </div>
                                                                             </div>
@@ -338,7 +338,7 @@ export default function SubprojectResultsPage() {
                                                                                 <span className="flex gap-2 font-semibold text-gray-800 mb-1"><Calendar className="h-5 w-5" />Idades</span>
                                                                                 <div className="flex flex-col gap-2">
                                                                                     {option.topAges.map((a) => (
-                                                                                        <Badge key={a.age} variant="secondary" className="text-xs px-2 py-1">{a.age} <span className="font-bold">({a.count})</span></Badge>
+                                                                                        <Badge key={a.age} variant="secondary" className="text-xs px-2 py-1">{a.age} <span className="font-bold"> - {a.count}</span></Badge>
                                                                                     ))}
                                                                                 </div>
                                                                             </div>
@@ -348,7 +348,7 @@ export default function SubprojectResultsPage() {
                                                                                 <span className="flex gap-2 font-semibold text-gray-800 mb-1"><Briefcase className="h-5 w-5" />Profissões</span>
                                                                                 <div className="flex flex-col gap-2">
                                                                                     {option.topProfessions.map((p) => (
-                                                                                        <Badge key={p.profession} variant="secondary" className="text-xs px-2 py-1">{p.profession} <span className="font-bold">({p.count})</span></Badge>
+                                                                                        <Badge key={p.profession} variant="secondary" className="text-xs px-2 py-1">{p.profession} <span className="font-bold"> - {p.count}</span></Badge>
                                                                                     ))}
                                                                                 </div>
                                                                             </div>
@@ -364,7 +364,7 @@ export default function SubprojectResultsPage() {
                                                                                         else if (g.gender === 'another') generoTraduzido = 'Outro';
                                                                                         else generoTraduzido = 'Não informado';
                                                                                         return (
-                                                                                            <Badge key={g.gender} variant="secondary" className="text-xs px-2 py-1">{generoTraduzido} <span className="font-bold">({g.count})</span></Badge>
+                                                                                            <Badge key={g.gender} variant="secondary" className="text-xs px-2 py-1">{generoTraduzido} <span className="font-bold"> - {g.count}</span></Badge>
                                                                                         );
                                                                                     })}
                                                                                 </div>
