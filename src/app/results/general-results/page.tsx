@@ -179,7 +179,7 @@ export default function GeneralResultsPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {metrics.studentsByGender.map((item) => (
+                {[...metrics.studentsByGender].sort((a, b) => b.count - a.count).map((item) => (
                   <div key={item.gender} className="flex items-center justify-between min-w-0">
                     <span className="capitalize truncate max-w-[60%]">{item.gender === 'male' ? 'Masculino' : item.gender === 'female' ? 'Feminino' : item.gender === 'another' ? 'Outro' : 'Não informado'}</span>
                     <div className="flex items-center gap-2">
@@ -210,7 +210,7 @@ export default function GeneralResultsPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {(showAllCourses ? metrics.studentsByCourse : metrics.studentsByCourse.slice(0, 5)).map((item) => (
+                {(showAllCourses ? [...metrics.studentsByCourse].sort((a, b) => b.count - a.count) : [...metrics.studentsByCourse].sort((a, b) => b.count - a.count).slice(0, 5)).map((item) => (
                   <div key={item.course} className="flex items-center justify-between min-w-0">
                     <span className="truncate max-w-[60%]">{item.course}</span>
                     <div className="flex items-center gap-2">
@@ -246,7 +246,7 @@ export default function GeneralResultsPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {(showAllAges ? metrics.studentsByAge : metrics.studentsByAge.slice(0, 5)).map((item) => (
+                {(showAllAges ? [...metrics.studentsByAge].sort((a, b) => b.count - a.count) : [...metrics.studentsByAge].sort((a, b) => b.count - a.count).slice(0, 5)).map((item) => (
                   <div key={item.age} className="flex items-center justify-between min-w-0">
                     <span className="truncate max-w-[60%]">{item.age} anos</span>
                     <div className="flex items-center gap-2">
@@ -282,7 +282,7 @@ export default function GeneralResultsPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {(showAllProfessions ? metrics.studentsByProfession : metrics.studentsByProfession.slice(0, 5)).map((item) => (
+                {(showAllProfessions ? [...metrics.studentsByProfession].sort((a, b) => b.count - a.count) : [...metrics.studentsByProfession].sort((a, b) => b.count - a.count).slice(0, 5)).map((item) => (
                   <div key={item.profession} className="flex items-center justify-between min-w-0">
                     <span className="truncate max-w-[60%]">{item.profession}</span>
                     <div className="flex items-center gap-2">
