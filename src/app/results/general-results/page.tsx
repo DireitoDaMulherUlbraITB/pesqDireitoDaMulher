@@ -46,6 +46,7 @@ export default function GeneralResultsPage() {
   const [error, setError] = useState<string | null>(null);
   const [showAllAges, setShowAllAges] = useState(false);
   const [showAllProfessions, setShowAllProfessions] = useState(false);
+  const [showAllCourses, setShowAllCourses] = useState(false);
 
   useEffect(() => {
     const fetchMetrics = async () => {
@@ -191,15 +192,25 @@ export default function GeneralResultsPage() {
           </Card>
 
           <Card className="overflow-hidden">
-            <CardHeader>
+            <CardHeader className="flex flex-row justify-between items-center">
               <CardTitle className="flex items-center gap-2">
                 <GraduationCap className="h-5 w-5" />
                 Distribuição por Curso
               </CardTitle>
+              <button
+                className="ml-auto text-sm text-primary hover:underline flex items-center gap-1"
+                onClick={() => setShowAllCourses((v) => !v)}
+              >
+                {showAllCourses ? (<>
+                  Recolher <ChevronUp className="h-4 w-4" />
+                </>) : (<>
+                  Ver todos <ChevronDown className="h-4 w-4" />
+                </>)}
+              </button>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {metrics.studentsByCourse.slice(0, 5).map((item) => (
+                {(showAllCourses ? metrics.studentsByCourse : metrics.studentsByCourse.slice(0, 5)).map((item) => (
                   <div key={item.course} className="flex items-center justify-between min-w-0">
                     <span className="truncate max-w-[60%]">{item.course}</span>
                     <div className="flex items-center gap-2">
@@ -207,7 +218,7 @@ export default function GeneralResultsPage() {
                     </div>
                   </div>
                 ))}
-                {metrics.studentsByCourse.length > 5 && (
+                {!showAllCourses && metrics.studentsByCourse.length > 5 && (
                   <p className="text-sm text-gray-500 mt-2">
                     +{metrics.studentsByCourse.length - 5} outros cursos
                   </p>
