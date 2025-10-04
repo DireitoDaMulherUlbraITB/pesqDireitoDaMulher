@@ -1,7 +1,6 @@
 "use server";
 
-import { count, eq, sql } from "drizzle-orm";
-import { and } from "drizzle-orm";
+import { and, count, desc, eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import {
@@ -15,10 +14,6 @@ import {
 // ---------------------------
 // Tipos auxiliares
 // ---------------------------
-type GenderCount = { gender: string | null; count: number };
-type CourseCount = { course: string | null; count: number };
-type PeriodCount = { period: number | null; count: number };
-type SectionCount = { section: string | null; count: number };
 type QuestionData = {
     questionId: string;
     questionNumber: string | null;
@@ -50,15 +45,14 @@ export async function getSubprojectMetrics(token: string) {
             };
         }
 
-        // Busca métricas do subprojeto
+        // Executa todas as consultas básicas em paralelo
         const [
             totalQuestions,
-            studentsByGender,
-            studentsByCourse,
-            studentsByPeriod,
-            studentsByAge,
-            studentsByProfession,
-            answersBySection,
+            totalStudentsRow,
+            completedRows,
+            activeSessions,
+            groupAnswers,
+            questionsWithAnswers,
         ] = await Promise.all([
             // Total de perguntas para este grupo
             db
@@ -66,104 +60,60 @@ export async function getSubprojectMetrics(token: string) {
                 .from(questionsTable)
                 .where(eq(questionsTable.groupId, group.id)),
 
-            // Distribuição por gênero
-            db
-                .select({
-                    gender: studentsTable.gender,
-                    count: count(),
-                })
-                .from(studentsTable)
-                .groupBy(studentsTable.gender) as Promise<GenderCount[]>,
+            // Total de estudantes cadastrados
+            db.select({ count: count() }).from(studentsTable),
 
-            // Distribuição por curso
+            // Estudantes com status 'answered'
             db
-                .select({
-                    course: studentsTable.course,
-                    count: count(),
-                })
+                .select({ count: count() })
                 .from(studentsTable)
-                .groupBy(studentsTable.course) as Promise<CourseCount[]>,
+                .where(eq(studentsTable.responseStatus, 'answered')),
 
-            // Distribuição por período
+            // Busca estudantes com sessões ativas
+            db
+                .select({ count: count() })
+                .from(studentSessionsTable)
+                .where(sql`${studentSessionsTable.expiresAt} > NOW()`),
+
+            // Calcula métricas específicas do grupo
+            db
+                .select({ count: count() })
+                .from(answersTable)
+                .innerJoin(questionsTable, eq(answersTable.questionId, questionsTable.id))
+                .where(eq(questionsTable.groupId, group.id)),
+
+            // Busca dados das perguntas com suas opções de resposta
             db
                 .select({
-                    period: studentsTable.period,
-                    count: count(),
-                })
-                .from(studentsTable)
-                .groupBy(studentsTable.period) as Promise<PeriodCount[]>,
-
-            // Distribuição por idade
-            db
-                .select({
-                    age: studentsTable.age,
-                    count: count(),
-                })
-                .from(studentsTable)
-                .groupBy(studentsTable.age) as Promise<{ age: string | null; count: number }[]>,
-
-            // Distribuição por profissão
-            db
-                .select({
-                    profession: studentsTable.profession,
-                    count: count(),
-                })
-                .from(studentsTable)
-                .groupBy(studentsTable.profession) as Promise<{ profession: string | null; count: number }[]>,
-
-            // Respostas por seção (apenas para este grupo)
-            db
-                .select({
-                    section: questionsTable.questionSection,
-                    count: count(answersTable.id),
+                    questionId: questionsTable.id,
+                    questionNumber: questionsTable.questionNumber,
+                    questionText: questionsTable.questionText,
+                    questionSection: questionsTable.questionSection,
+                    type: questionsTable.type,
+                    answerText: answersTable.answerText,
+                    answerCount: count(answersTable.id),
                 })
                 .from(questionsTable)
-                .leftJoin(
-                    answersTable,
-                    eq(questionsTable.id, answersTable.questionId),
-                )
+                .leftJoin(answersTable, eq(questionsTable.id, answersTable.questionId))
                 .where(eq(questionsTable.groupId, group.id))
-                .groupBy(questionsTable.questionSection)
-                .orderBy(questionsTable.questionSection) as Promise<SectionCount[]>,
+                .groupBy(
+                    questionsTable.id,
+                    questionsTable.questionNumber,
+                    questionsTable.questionText,
+                    questionsTable.questionSection,
+                    questionsTable.type,
+                    answersTable.answerText
+                )
+                .orderBy(questionsTable.questionNumber, answersTable.answerText),
         ]);
 
-        // Total de estudantes cadastrados
-        const totalStudentsRow = await db.select({ count: count() }).from(studentsTable);
         const totalStudents = totalStudentsRow[0]?.count || 0;
-
-        // Estudantes com status 'answered'
-        const completedRows = await db
-            .select({ count: count() })
-            .from(studentsTable)
-            .where(eq(studentsTable.responseStatus, 'answered'));
         const completedStudents = completedRows[0]?.count || 0;
-
-        // Busca dados das perguntas com suas opções de resposta
-        const questionsWithAnswers = await db
-            .select({
-                questionId: questionsTable.id,
-                questionNumber: questionsTable.questionNumber,
-                questionText: questionsTable.questionText,
-                questionSection: questionsTable.questionSection,
-                type: questionsTable.type,
-                answerText: answersTable.answerText,
-                answerCount: count(answersTable.id),
-            })
-            .from(questionsTable)
-            .leftJoin(answersTable, eq(questionsTable.id, answersTable.questionId))
-            .where(eq(questionsTable.groupId, group.id))
-            .groupBy(
-                questionsTable.id,
-                questionsTable.questionNumber,
-                questionsTable.questionText,
-                questionsTable.questionSection,
-                questionsTable.type,
-                answersTable.answerText
-            )
-            .orderBy(questionsTable.questionNumber, answersTable.answerText);
 
         // Agrupa respostas por pergunta
         const questionsData: Record<string, QuestionData> = {};
+        const markQuestions: Array<{ questionId: string; answerText: string; type: string }> = [];
+
         for (const row of questionsWithAnswers) {
             const questionId = row.questionId;
             if (!questionsData[questionId]) {
@@ -179,68 +129,6 @@ export async function getSubprojectMetrics(token: string) {
             }
 
             if (row.answerText) {
-                let topCourses = undefined;
-                let topAges = undefined;
-                let topProfessions = undefined;
-                let topGenders = undefined;
-                if (row.type === 'to-mark' || row.type === 'to-mark-several') {
-                    topCourses = await db
-                        .select({ course: studentsTable.course, count: count() })
-                        .from(answersTable)
-                        .innerJoin(studentsTable, eq(answersTable.studentId, studentsTable.id))
-                        .where(
-                            and(
-                                eq(answersTable.questionId, questionId),
-                                eq(answersTable.answerText, row.answerText)
-                            )
-                        )
-                        .groupBy(studentsTable.course)
-                        .orderBy(sql`count DESC`)
-                        .limit(3);
-
-                    topAges = await db
-                        .select({ age: studentsTable.age, count: count() })
-                        .from(answersTable)
-                        .innerJoin(studentsTable, eq(answersTable.studentId, studentsTable.id))
-                        .where(
-                            and(
-                                eq(answersTable.questionId, questionId),
-                                eq(answersTable.answerText, row.answerText)
-                            )
-                        )
-                        .groupBy(studentsTable.age)
-                        .orderBy(sql`count DESC`)
-                        .limit(3);
-
-                    topProfessions = await db
-                        .select({ profession: studentsTable.profession, count: count() })
-                        .from(answersTable)
-                        .innerJoin(studentsTable, eq(answersTable.studentId, studentsTable.id))
-                        .where(
-                            and(
-                                eq(answersTable.questionId, questionId),
-                                eq(answersTable.answerText, row.answerText)
-                            )
-                        )
-                        .groupBy(studentsTable.profession)
-                        .orderBy(sql`count DESC`)
-                        .limit(3);
-
-                    topGenders = await db
-                        .select({ gender: studentsTable.gender, count: count() })
-                        .from(answersTable)
-                        .innerJoin(studentsTable, eq(answersTable.studentId, studentsTable.id))
-                        .where(
-                            and(
-                                eq(answersTable.questionId, questionId),
-                                eq(answersTable.answerText, row.answerText)
-                            )
-                        )
-                        .groupBy(studentsTable.gender)
-                        .orderBy(sql`count DESC`)
-                        .limit(3);
-                }
-
                 const existingOption = questionsData[questionId].options.find((opt: { text: string }) => opt.text === row.answerText);
                 if (existingOption) {
                     existingOption.count += row.answerCount || 0;
@@ -248,28 +136,161 @@ export async function getSubprojectMetrics(token: string) {
                     questionsData[questionId].options.push({
                         text: row.answerText,
                         count: row.answerCount || 0,
-                        topCourses,
-                        topAges,
-                        topProfessions,
-                        topGenders,
                     });
                 }
                 questionsData[questionId].totalAnswers += row.answerCount || 0;
+
+                // Coleta perguntas que precisam de rankings
+                if (row.type === 'to-mark' || row.type === 'to-mark-several') {
+                    markQuestions.push({
+                        questionId,
+                        answerText: row.answerText,
+                        type: row.type,
+                    });
+                }
             }
         }
 
-        // Busca estudantes com sessões ativas
-        const activeSessions = await db
-            .select({ count: count() })
-            .from(studentSessionsTable)
-            .where(sql`${studentSessionsTable.expiresAt} > NOW()`);
+        // Busca todos os rankings em uma única consulta otimizada
+        let allRankings: {
+            courses?: Record<string, Array<{ course: string; count: number }>>;
+            ages?: Record<string, Array<{ age: string; count: number }>>;
+            professions?: Record<string, Array<{ profession: string; count: number }>>;
+            genders?: Record<string, Array<{ gender: string; count: number }>>;
+        } = {};
+        if (markQuestions.length > 0) {
+            const questionIds = [...new Set(markQuestions.map(q => q.questionId))];
+            const answerTexts = [...new Set(markQuestions.map(q => q.answerText))];
 
-        // Calcula métricas específicas do grupo
-        const groupAnswers = await db
-            .select({ count: count() })
-            .from(answersTable)
-            .innerJoin(questionsTable, eq(answersTable.questionId, questionsTable.id))
-            .where(eq(questionsTable.groupId, group.id));
+            // Busca todos os rankings em paralelo
+            const [coursesRankings, agesRankings, professionsRankings, gendersRankings] = await Promise.all([
+                // Rankings por curso
+                db
+                    .select({
+                        questionId: answersTable.questionId,
+                        answerText: answersTable.answerText,
+                        course: studentsTable.course,
+                        count: count(),
+                    })
+                    .from(answersTable)
+                    .innerJoin(studentsTable, eq(answersTable.studentId, studentsTable.id))
+                    .where(
+                        and(
+                            inArray(answersTable.questionId, questionIds),
+                            inArray(answersTable.answerText, answerTexts)
+                        )
+                    )
+                    .groupBy(answersTable.questionId, answersTable.answerText, studentsTable.course)
+                    .orderBy(answersTable.questionId, answersTable.answerText, desc(count())),
+
+                // Rankings por idade
+                db
+                    .select({
+                        questionId: answersTable.questionId,
+                        answerText: answersTable.answerText,
+                        age: studentsTable.age,
+                        count: count(),
+                    })
+                    .from(answersTable)
+                    .innerJoin(studentsTable, eq(answersTable.studentId, studentsTable.id))
+                    .where(
+                        and(
+                            inArray(answersTable.questionId, questionIds),
+                            inArray(answersTable.answerText, answerTexts)
+                        )
+                    )
+                    .groupBy(answersTable.questionId, answersTable.answerText, studentsTable.age)
+                    .orderBy(answersTable.questionId, answersTable.answerText, desc(count())),
+
+                // Rankings por profissão
+                db
+                    .select({
+                        questionId: answersTable.questionId,
+                        answerText: answersTable.answerText,
+                        profession: studentsTable.profession,
+                        count: count(),
+                    })
+                    .from(answersTable)
+                    .innerJoin(studentsTable, eq(answersTable.studentId, studentsTable.id))
+                    .where(
+                        and(
+                            inArray(answersTable.questionId, questionIds),
+                            inArray(answersTable.answerText, answerTexts)
+                        )
+                    )
+                    .groupBy(answersTable.questionId, answersTable.answerText, studentsTable.profession)
+                    .orderBy(answersTable.questionId, answersTable.answerText, desc(count())),
+
+                // Rankings por gênero
+                db
+                    .select({
+                        questionId: answersTable.questionId,
+                        answerText: answersTable.answerText,
+                        gender: studentsTable.gender,
+                        count: count(),
+                    })
+                    .from(answersTable)
+                    .innerJoin(studentsTable, eq(answersTable.studentId, studentsTable.id))
+                    .where(
+                        and(
+                            inArray(answersTable.questionId, questionIds),
+                            inArray(answersTable.answerText, answerTexts)
+                        )
+                    )
+                    .groupBy(answersTable.questionId, answersTable.answerText, studentsTable.gender)
+                    .orderBy(answersTable.questionId, answersTable.answerText, desc(count())),
+            ]);
+
+            // Processa os rankings
+            const processRankings = <T extends { questionId: string; answerText: string; count: number }>(
+                rankings: T[],
+                key: keyof Omit<T, 'questionId' | 'answerText' | 'count'>
+            ): Record<string, Array<{ [K in keyof T]: T[K] } & { count: number }>> => {
+                const grouped: Record<string, Array<{ [K in keyof T]: T[K] } & { count: number }>> = {};
+                for (const ranking of rankings) {
+                    const groupKey = `${ranking.questionId}-${ranking.answerText}`;
+                    if (!grouped[groupKey]) {
+                        grouped[groupKey] = [];
+                    }
+                    grouped[groupKey].push({ [key]: ranking[key], count: ranking.count } as { [K in keyof T]: T[K] } & { count: number });
+                }
+
+                // Limita a 3 itens por grupo e ordena por count
+                for (const groupKey in grouped) {
+                    grouped[groupKey] = grouped[groupKey]
+                        .sort((a, b) => b.count - a.count)
+                        .slice(0, 3);
+                }
+                return grouped;
+            };
+
+            allRankings = {
+                courses: processRankings(coursesRankings, 'course'),
+                ages: processRankings(agesRankings, 'age'),
+                professions: processRankings(professionsRankings, 'profession'),
+                genders: processRankings(gendersRankings, 'gender'),
+            };
+        }
+
+        // Aplica os rankings às opções
+        for (const questionId in questionsData) {
+            for (const option of questionsData[questionId].options) {
+                const groupKey = `${questionId}-${option.text}`;
+
+                if (allRankings.courses?.[groupKey]) {
+                    option.topCourses = allRankings.courses[groupKey];
+                }
+                if (allRankings.ages?.[groupKey]) {
+                    option.topAges = allRankings.ages[groupKey];
+                }
+                if (allRankings.professions?.[groupKey]) {
+                    option.topProfessions = allRankings.professions[groupKey];
+                }
+                if (allRankings.genders?.[groupKey]) {
+                    option.topGenders = allRankings.genders[groupKey];
+                }
+            }
+        }
 
         return {
             success: true,
@@ -285,30 +306,6 @@ export async function getSubprojectMetrics(token: string) {
                     totalStudents > 0
                         ? Math.round((completedStudents / totalStudents) * 100)
                         : 0,
-                studentsByGender: studentsByGender.map((item) => ({
-                    gender: item.gender as string,
-                    count: item.count,
-                })),
-                studentsByCourse: studentsByCourse.map((item) => ({
-                    course: item.course as string,
-                    count: item.count,
-                })),
-                studentsByPeriod: studentsByPeriod.map((item) => ({
-                    period: item.period as number,
-                    count: item.count,
-                })),
-                studentsByAge: studentsByAge.map((item) => ({
-                    age: item.age as string,
-                    count: item.count,
-                })),
-                studentsByProfession: studentsByProfession.map((item) => ({
-                    profession: item.profession as string,
-                    count: item.count,
-                })),
-                answersBySection: answersBySection.map((item) => ({
-                    section: item.section as string,
-                    count: item.count,
-                })),
                 questionsData: Object.values(questionsData).sort((a, b) => {
                     // Converte questionNumber para número para ordenação correta
                     const numA = parseInt(a.questionNumber as string) || 0;
