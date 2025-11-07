@@ -28,6 +28,7 @@ type QuestionData = {
         topAges?: Array<{ age: string; count: number }>;
         topProfessions?: Array<{ profession: string; count: number }>;
         topGenders?: Array<{ gender: string; count: number }>;
+        studentInfo?: Array<{ gender: string; course: string; profession: string; age: string }>;
     }>;
 };
 
@@ -110,6 +111,59 @@ export async function getSubprojectMetrics(token: string) {
         const totalStudents = totalStudentsRow[0]?.count || 0;
         const completedStudents = completedRows[0]?.count || 0;
 
+        // Identifica questões abertas que precisam de dados do estudante
+        const openQuestions = questionsWithAnswers
+            .filter(row => row.type === 'to-write' || row.type === 'input' || row.type === 'textarea')
+            .map(row => ({ questionId: row.questionId, type: row.type }));
+
+        // Busca dados do estudante para questões abertas
+        const openQuestionStudentData: Record<string, Array<{
+            answerText: string;
+            gender: string;
+            course: string;
+            profession: string;
+            age: string;
+        }>> = {};
+
+        if (openQuestions.length > 0) {
+            const openQuestionIds = [...new Set(openQuestions.map(q => q.questionId))];
+            
+            const studentAnswersData = await db
+                .select({
+                    questionId: answersTable.questionId,
+                    answerText: answersTable.answerText,
+                    gender: studentsTable.gender,
+                    course: studentsTable.course,
+                    profession: studentsTable.profession,
+                    age: studentsTable.age,
+                })
+                .from(answersTable)
+                .innerJoin(studentsTable, eq(answersTable.studentId, studentsTable.id))
+                .innerJoin(questionsTable, eq(answersTable.questionId, questionsTable.id))
+                .where(
+                    and(
+                        inArray(answersTable.questionId, openQuestionIds),
+                        eq(questionsTable.groupId, group.id)
+                    )
+                )
+                .orderBy(answersTable.questionId, answersTable.answerText);
+
+            // Agrupa por questionId e answerText
+            for (const row of studentAnswersData) {
+                const key = row.questionId;
+                if (!openQuestionStudentData[key]) {
+                    openQuestionStudentData[key] = [];
+                }
+                openQuestionStudentData[key].push({
+                    answerText: row.answerText,
+                    gender: row.gender,
+                    course: row.course,
+                    profession: row.profession,
+                    age: row.age,
+                });
+            }
+        }
+
         // Agrupa respostas por pergunta
         const questionsData: Record<string, QuestionData> = {};
         const markQuestions: Array<{ questionId: string; answerText: string; type: string }> = [];
@@ -132,11 +186,47 @@ export async function getSubprojectMetrics(token: string) {
                 const existingOption = questionsData[questionId].options.find((opt: { text: string }) => opt.text === row.answerText);
                 if (existingOption) {
                     existingOption.count += row.answerCount || 0;
+                    
+                    // Adiciona dados do estudante para questões abertas (caso ainda não tenha)
+                    if ((row.type === 'to-write' || row.type === 'input' || row.type === 'textarea') && 
+                        openQuestionStudentData[questionId] && 
+                        !existingOption.studentInfo) {
+                        existingOption.studentInfo = openQuestionStudentData[questionId]
+                            .filter(item => item.answerText === row.answerText)
+                            .map(item => ({
+                                gender: item.gender,
+                                course: item.course,
+                                profession: item.profession,
+                                age: item.age,
+                            }));
+                    }
                 } else {
-                    questionsData[questionId].options.push({
+                    const newOption: {
+                        text: string;
+                        count: number;
+                        topCourses?: Array<{ course: string; count: number }>;
+                        topAges?: Array<{ age: string; count: number }>;
+                        topProfessions?: Array<{ profession: string; count: number }>;
+                        topGenders?: Array<{ gender: string; count: number }>;
+                        studentInfo?: Array<{ gender: string; course: string; profession: string; age: string }>;
+                    } = {
                         text: row.answerText,
                         count: row.answerCount || 0,
-                    });
+                    };
+
+                    // Adiciona dados do estudante para questões abertas
+                    if ((row.type === 'to-write' || row.type === 'input' || row.type === 'textarea') && openQuestionStudentData[questionId]) {
+                        newOption.studentInfo = openQuestionStudentData[questionId]
+                            .filter(item => item.answerText === row.answerText)
+                            .map(item => ({
+                                gender: item.gender,
+                                course: item.course,
+                                profession: item.profession,
+                                age: item.age,
+                            }));
+                    }
+
+                    questionsData[questionId].options.push(newOption);
                 }
                 questionsData[questionId].totalAnswers += row.answerCount || 0;
 

@@ -6,6 +6,7 @@ import {
     CheckCircle,
     ChevronDown,
     ChevronUp,
+    Download,
     FileText,
     GraduationCap,
     Transgender,
@@ -15,6 +16,7 @@ import {
 import Image from "next/image";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 import { getSubprojectMetrics } from "@/actions/get-subproject-metrics";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Skeleton } from "@/components/ui/skeleton";
+import { generateResultsPDF } from "@/lib/generate-pdf";
 
 interface QuestionOption {
     text: string;
@@ -30,6 +33,7 @@ interface QuestionOption {
     topAges?: Array<{ age: string, count: number }>;
     topProfessions?: Array<{ profession: string, count: number }>;
     topGenders?: Array<{ gender: string, count: number }>;
+    studentInfo?: Array<{ gender: string; course: string; profession: string; age: string }>;
 }
 
 interface QuestionData {
@@ -62,6 +66,7 @@ export default function SubprojectResultsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [expandedQuestions, setExpandedQuestions] = useState<Set<string>>(new Set());
+    const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
     const toggleQuestionExpansion = (questionId: string) => {
         setExpandedQuestions(prev => {
@@ -73,6 +78,26 @@ export default function SubprojectResultsPage() {
             }
             return newSet;
         });
+    };
+
+    const handleGeneratePDF = () => {
+        if (!metrics) {
+            toast.error("Dados não disponíveis para gerar PDF");
+            return;
+        }
+
+        setIsGeneratingPDF(true);
+        toast.loading("Gerando PDF...", { id: "pdf-generation" });
+
+        try {
+            generateResultsPDF(metrics);
+            toast.success("PDF gerado com sucesso!", { id: "pdf-generation" });
+        } catch (error) {
+            console.error("Erro ao gerar PDF:", error);
+            toast.error("Erro ao gerar PDF. Tente novamente.", { id: "pdf-generation" });
+        } finally {
+            setIsGeneratingPDF(false);
+        }
     };
 
     useEffect(() => {
@@ -147,12 +172,22 @@ export default function SubprojectResultsPage() {
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
                 <div className="mb-8">
-                    <div className="flex flex-col md:flex-row items-center gap-4 mb-4">
-                        <Image src="/LogoUlbra.png" alt="ULBRA" width={150} height={50} />
-                        <div>
-                            <h1 className="text-3xl font-bold text-gray-900">{metrics.groupName}</h1>
-                            <p className="text-lg text-gray-600">{metrics.subprojectName}</p>
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-4">
+                        <div className="flex flex-col md:flex-row items-center gap-4">
+                            <Image src="/LogoUlbra.png" alt="ULBRA" width={150} height={50} />
+                            <div>
+                                <h1 className="text-3xl font-bold text-gray-900">{metrics.groupName}</h1>
+                                <p className="text-lg text-gray-600">{metrics.subprojectName}</p>
+                            </div>
                         </div>
+                        <Button
+                            onClick={handleGeneratePDF}
+                            disabled={isGeneratingPDF}
+                            className="flex items-center gap-2"
+                        >
+                            <Download className="h-4 w-4" />
+                            {isGeneratingPDF ? "Gerando PDF..." : "Gerar PDF"}
+                        </Button>
                     </div>
                 </div>
 
